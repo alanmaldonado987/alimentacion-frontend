@@ -116,7 +116,7 @@ export const RegisterPage = () => {
           {...register('phone')}
           type="tel"
           label="Teléfono (opcional)"
-          placeholder="+34 600 000 000"
+          placeholder="+57 600 000 000"
           error={errors.phone?.message}
           leftIcon={<Phone className="w-5 h-5" />}
         />
