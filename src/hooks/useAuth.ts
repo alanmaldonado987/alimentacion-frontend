@@ -36,23 +36,18 @@ export const useAuth = () => {
 
   const register = useCallback(async (data: RegisterData) => {
     try {
-      const response = await authApi.register(data);
-      storeLogin(response.user, response.accessToken, response.refreshToken);
-      toast.success('¡Cuenta creada exitosamente!');
+      await authApi.register(data);
+      toast.success('¡Cuenta creada exitosamente! Por favor, inicia sesión.');
       
-      // Redirect based on role
-      if (response.user.role === 'DOCTOR') {
-        navigate('/doctor/dashboard');
-      } else {
-        navigate('/patient/dashboard');
-      }
+      // Redirect to login page
+      navigate('/login');
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>;
       const message = axiosError.response?.data?.error || 'Error al registrarse';
       toast.error(message);
       throw error;
     }
-  }, [storeLogin, navigate]);
+  }, [navigate]);
 
   const logout = useCallback(async () => {
     try {

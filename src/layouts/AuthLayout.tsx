@@ -48,8 +48,11 @@ export const AuthLayout = () => {
               <div className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50" />
               <div className="w-10 h-10 rounded-full bg-white/30 border-2 border-white/50" />
             </div>
-            <p className="text-white/80 text-sm">
+            {/* <p className="text-white/80 text-sm">
               +500 profesionales confían en NutriPlan
+            </p> */}
+            <p className="text-white/80 text-sm">
+              En desarrollo
             </p>
           </div>
         </div>

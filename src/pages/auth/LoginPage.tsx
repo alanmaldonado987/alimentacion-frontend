@@ -101,7 +101,7 @@ export const LoginPage = () => {
       </div>
 
       {/* Demo credentials */}
-      <div className="mt-8 p-4 bg-mint-50 rounded-xl">
+      {/* <div className="mt-8 p-4 bg-mint-50 rounded-xl">
         <p className="text-sm font-medium text-mint-800 mb-2">
           Credenciales de prueba:
         </p>
@@ -110,7 +110,7 @@ export const LoginPage = () => {
           <p><strong>Paciente:</strong> carlos@email.com</p>
           <p><strong>Contraseña:</strong> Password123</p>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { ConfirmDialog } from '@/components/ui';
 
 interface NavItem {
   to: string;
@@ -36,6 +37,8 @@ export const DashboardLayout = () => {
   const { user, isAuthenticated, isDoctor, logout } = useAuth();
   const { isLoading } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
 
   if (isLoading) {
@@ -130,7 +133,7 @@ export const DashboardLayout = () => {
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={() => setShowLogoutDialog(true)}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-5 h-5" />
@@ -166,6 +169,28 @@ export const DashboardLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Logout confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await logout();
+          } finally {
+            setIsLoggingOut(false);
+            setShowLogoutDialog(false);
+          }
+        }}
+        title="¿Cerrar sesión?"
+        message="¿Estás seguro de que deseas cerrar tu sesión? Tendrás que iniciar sesión nuevamente para acceder a tu cuenta."
+        confirmText="Sí, cerrar sesión"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isLoggingOut}
+        icon="logout"
+      />
     </div>
   );
 };
