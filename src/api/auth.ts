@@ -16,26 +16,26 @@ export interface RegisterData {
 
 export const authApi = {
   login: async (data: LoginData): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
+    const response = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', data);
     return response.data.data;
   },
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
+    const response = await api.post<ApiResponse<AuthResponse>>('/api/auth/register', data);
     return response.data.data;
   },
 
   getProfile: async (): Promise<User> => {
-    const response = await api.get<ApiResponse<User>>('/auth/profile');
+    const response = await api.get<ApiResponse<User>>('/api/auth/profile');
     return response.data.data;
   },
 
   logout: async (refreshToken: string): Promise<void> => {
-    await api.post('/auth/logout', { refreshToken });
+    await api.post('/api/auth/logout', { refreshToken });
   },
 
   refreshToken: async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
-    const response = await api.post<ApiResponse<{ accessToken: string; refreshToken: string }>>('/auth/refresh', { refreshToken });
+    const response = await api.post<ApiResponse<{ accessToken: string; refreshToken: string }>>('/api/auth/refresh', { refreshToken });
     return response.data.data;
   },
 };

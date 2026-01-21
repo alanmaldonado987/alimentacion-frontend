@@ -41,36 +41,36 @@ export interface UpdatePlanData extends Partial<CreatePlanData> {
 
 export const plansApi = {
   getAll: async (): Promise<MealPlan[]> => {
-    const response = await api.get<ApiResponse<MealPlan[]>>('/plans');
+    const response = await api.get<ApiResponse<MealPlan[]>>('/api/plans');
     return response.data.data;
   },
 
   getById: async (id: string): Promise<MealPlan> => {
-    const response = await api.get<ApiResponse<MealPlan>>(`/plans/${id}`);
+    const response = await api.get<ApiResponse<MealPlan>>(`/api/plans/${id}`);
     return response.data.data;
   },
 
   create: async (data: CreatePlanData): Promise<MealPlan> => {
-    const response = await api.post<ApiResponse<MealPlan>>('/plans', data);
+    const response = await api.post<ApiResponse<MealPlan>>('/api/plans', data);
     return response.data.data;
   },
 
   update: async (id: string, data: UpdatePlanData): Promise<MealPlan> => {
-    const response = await api.put<ApiResponse<MealPlan>>(`/plans/${id}`, data);
+    const response = await api.put<ApiResponse<MealPlan>>(`/api/plans/${id}`, data);
     return response.data.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/plans/${id}`);
+    await api.delete(`/api/plans/${id}`);
   },
 
   getDoctorStats: async (): Promise<DoctorStats> => {
-    const response = await api.get<ApiResponse<DoctorStats>>('/plans/stats/doctor');
+    const response = await api.get<ApiResponse<DoctorStats>>('/api/plans/stats/doctor');
     return response.data.data;
   },
 
   getPatientStats: async (): Promise<PatientStats> => {
-    const response = await api.get<ApiResponse<PatientStats>>('/plans/stats/patient');
+    const response = await api.get<ApiResponse<PatientStats>>('/api/plans/stats/patient');
     return response.data.data;
   },
 };

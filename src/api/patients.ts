@@ -16,31 +16,31 @@ export interface UpdatePatientData {
 
 export const patientsApi = {
   getAll: async (): Promise<Patient[]> => {
-    const response = await api.get<ApiResponse<Patient[]>>('/patients');
+    const response = await api.get<ApiResponse<Patient[]>>('/api/patients');
     return response.data.data;
   },
 
   getById: async (id: string): Promise<Patient> => {
-    const response = await api.get<ApiResponse<Patient>>(`/patients/${id}`);
+    const response = await api.get<ApiResponse<Patient>>(`/api/patients/${id}`);
     return response.data.data;
   },
 
   create: async (data: CreatePatientData): Promise<Patient> => {
-    const response = await api.post<ApiResponse<Patient>>('/patients', data);
+    const response = await api.post<ApiResponse<Patient>>('/api/patients', data);
     return response.data.data;
   },
 
   update: async (id: string, data: UpdatePatientData): Promise<Patient> => {
-    const response = await api.put<ApiResponse<Patient>>(`/patients/${id}`, data);
+    const response = await api.put<ApiResponse<Patient>>(`/api/patients/${id}`, data);
     return response.data.data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/patients/${id}`);
+    await api.delete(`/api/patients/${id}`);
   },
 
   assign: async (email: string): Promise<Patient> => {
-    const response = await api.post<ApiResponse<Patient>>('/patients/assign', { email });
+    const response = await api.post<ApiResponse<Patient>>('/api/patients/assign', { email });
     return response.data.data;
   },
 };

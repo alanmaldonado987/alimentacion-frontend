@@ -1,8 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
+// VITE_API_URL should be the base server URL (e.g., https://alimentacion-backend.onrender.com)
+// If not set, use empty string for local development (Vite proxy will handle /api)
+const baseURL = import.meta.env.VITE_API_URL || '';
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -37,7 +40,10 @@ api.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        const response = await axios.post(`${import.meta.env.VITE_API_URL || '/api'}/auth/refresh`, { refreshToken });
+        // Build refresh URL - VITE_API_URL should be the base server URL (without /api)
+        const baseURL = import.meta.env.VITE_API_URL || '';
+        const refreshUrl = baseURL ? `${baseURL}/api/auth/refresh` : '/api/auth/refresh';
+        const response = await axios.post(refreshUrl, { refreshToken });
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         useAuthStore.getState().setTokens(accessToken, newRefreshToken);
