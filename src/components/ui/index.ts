@@ -8,4 +8,6 @@ export * from './Select';
 export * from './TextArea';
 export * from './ConfirmDialog';
 export * from './EmptyState';
+export * from './Dropdown';
+export * from '../Avatar';
 

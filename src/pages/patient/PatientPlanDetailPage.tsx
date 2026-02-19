@@ -152,11 +152,13 @@ export const PatientPlanDetailPage = () => {
               <User className="w-4 h-4" />
               Dr. {plan.doctor.name}
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-              {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-            </span>
+            {plan.startDate && plan.endDate && (
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+              </span>
+            )}
             <Badge variant={plan.isActive ? 'success' : 'default'}>
               {plan.isActive ? 'Activo' : 'Completado'}
             </Badge>
@@ -406,16 +408,14 @@ export const PatientPlanDetailPage = () => {
                 <span className="text-gray-500">Doctor</span>
                 <span className="font-medium text-gray-900">{plan.doctor.name}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">Duración</span>
-                <span className="font-medium text-gray-900">
-                  {differenceInDays(new Date(plan.endDate), new Date(plan.startDate)) + 1} días
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">Días configurados</span>
-                <span className="font-medium text-gray-900">{plan.dailyMeals.length}</span>
-              </div>
+              {plan.startDate && plan.endDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Duración</span>
+                  <span className="font-medium text-gray-900">
+                    {differenceInDays(new Date(plan.endDate), new Date(plan.startDate)) + 1} días
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Creado</span>
                 <span className="font-medium text-gray-900">

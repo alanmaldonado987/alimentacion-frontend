@@ -3,7 +3,7 @@ import { ApiResponse, Patient } from '@/types';
 
 export interface CreatePatientData {
   email: string;
-  password: string;
+  cedula: string;
   name: string;
   phone?: string;
 }

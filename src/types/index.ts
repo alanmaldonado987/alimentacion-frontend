@@ -39,9 +39,7 @@ export interface Meal {
   name: string;
   description?: string;
   calories?: number;
-  protein?: number;
-  carbs?: number;
-  fats?: number;
+  porcion?: string;
   time?: string;
   foods: Food[];
 }

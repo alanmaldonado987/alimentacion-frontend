@@ -21,6 +21,9 @@ import { PatientDashboard } from '@/pages/patient/PatientDashboard';
 import { PatientPlansPage } from '@/pages/patient/PatientPlansPage';
 import { PatientPlanDetailPage } from '@/pages/patient/PatientPlanDetailPage';
 
+// Settings Page
+import { SettingsPage } from '@/pages/SettingsPage';
+
 function App() {
   const { setLoading } = useAuthStore();
 
@@ -43,6 +46,7 @@ function App() {
         <Route path="patients" element={<PatientsPage />} />
         <Route path="plans" element={<PlansPage />} />
         <Route path="plans/:id" element={<PlanDetailPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* Patient Routes */}
@@ -50,6 +54,7 @@ function App() {
         <Route path="dashboard" element={<PatientDashboard />} />
         <Route path="plans" element={<PatientPlansPage />} />
         <Route path="plans/:id" element={<PatientPlanDetailPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* Default Routes */}

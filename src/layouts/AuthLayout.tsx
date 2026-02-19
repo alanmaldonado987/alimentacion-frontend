@@ -52,7 +52,7 @@ export const AuthLayout = () => {
               +500 profesionales confían en NutriPlan
             </p> */}
             <p className="text-white/80 text-sm">
-              En desarrollo
+              En desarrollo - {import.meta.env.VITE_VERSION_APP}
             </p>
           </div>
         </div>

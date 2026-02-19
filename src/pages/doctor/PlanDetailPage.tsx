@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { plansApi } from '@/api/plans';
 import {
   MealPlan,
-  DailyMeal,
   Meal,
   MEAL_TYPE_LABELS,
   MEAL_TYPE_COLORS,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
-  DAY_NAMES,
   MealType,
 } from '@/types';
 import {
@@ -35,7 +33,6 @@ import {
   Clock,
   Flame,
   Plus,
-  Edit2,
   Save,
   X,
   Utensils,
@@ -44,16 +41,23 @@ import {
   Droplets,
   Dumbbell,
   Moon,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 
-const addMealSchema = z.object({
-  dayNumber: z.string().min(1, 'Selecciona un día'),
-  type: z.string().min(1, 'Selecciona tipo de comida'),
+const foodItemSchema = z.object({
   name: z.string().min(1, 'Nombre requerido'),
+  quantity: z.string()
+    .min(1, 'Porción requerida')
+    .regex(/^\d+$/, 'Solo se permiten números'),
+});
+
+const addMealSchema = z.object({
+  type: z.string().min(1, 'Selecciona tipo de comida'),
   description: z.string().optional(),
   time: z.string().optional(),
   calories: z.string().optional(),
-  foods: z.string().optional(),
+  foods: z.array(foodItemSchema).min(1, 'Debe agregar al menos un alimento'),
 });
 
 type AddMealForm = z.infer<typeof addMealSchema>;
@@ -71,21 +75,29 @@ export const PlanDetailPage = () => {
   const navigate = useNavigate();
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState<number>(1);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
+  const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingMealId, setDeletingMealId] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<AddMealForm>({
     resolver: zodResolver(addMealSchema),
     defaultValues: {
-      dayNumber: '1',
+      foods: [{ name: '', quantity: '' }],
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'foods',
+  });
+
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -93,9 +105,6 @@ export const PlanDetailPage = () => {
       try {
         const data = await plansApi.getById(id);
         setPlan(data);
-        if (data.dailyMeals.length > 0) {
-          setSelectedDay(data.dailyMeals[0].dayNumber);
-        }
       } catch (error) {
         toast.error('Error al cargar el plan');
         navigate('/doctor/plans');
@@ -107,7 +116,152 @@ export const PlanDetailPage = () => {
     fetchPlan();
   }, [id, navigate]);
 
-  const currentDayMeals = plan?.dailyMeals.find((dm) => dm.dayNumber === selectedDay);
+  useEffect(() => {
+    if (isMealModalOpen && plan) {
+      if (editingMeal) {
+        const foodsArray = editingMeal.foods.length > 0
+          ? editingMeal.foods.map((f) => ({
+              name: f.name,
+              quantity: f.quantity,
+            }))
+          : [];
+        
+        reset({
+          type: editingMeal.type,
+          description: editingMeal.description || '',
+          time: editingMeal.time || '',
+          calories: editingMeal.calories?.toString() || '',
+          foods: [
+            { name: editingMeal.name, quantity: editingMeal.porcion || '' },
+            ...foodsArray,
+          ],
+        });
+      } else {
+        reset({
+          foods: [{ name: '', quantity: '' }],
+        });
+      }
+    }
+  }, [isMealModalOpen, plan, reset, editingMeal]);
+
+  const onSubmit = async (data: AddMealForm) => {
+    if (!plan || !id) return;
+
+    setIsSubmitting(true);
+    try {
+      // Usar el primer día disponible, o crear el día 1 si no hay días
+      const dayNumber = plan.dailyMeals.length > 0 
+        ? plan.dailyMeals[0].dayNumber 
+        : 1;
+      let dailyMeal = plan.dailyMeals.find((dm) => dm.dayNumber === dayNumber);
+
+      if (!dailyMeal) {
+        // Si hay fechas, usar el nombre del día basado en la fecha, sino usar "Día X"
+        let dayName = `Día ${dayNumber}`;
+        if (plan.startDate) {
+          const dayDate = addDays(new Date(plan.startDate), dayNumber - 1);
+          const dayNameFormatted = format(dayDate, 'EEEE', { locale: es });
+          dayName = dayNameFormatted.charAt(0).toUpperCase() + dayNameFormatted.slice(1);
+        }
+        
+        const updatedPlan = await plansApi.update(id, {
+          dailyMeals: [
+            ...plan.dailyMeals,
+            {
+              dayNumber,
+              dayName: dayName,
+              meals: [],
+            },
+          ],
+        });
+        dailyMeal = updatedPlan.dailyMeals.find((dm) => dm.dayNumber === dayNumber);
+        if (!dailyMeal) {
+          throw new Error('Error al crear el día');
+        }
+        setPlan(updatedPlan);
+      }
+
+      const firstFood = data.foods[0];
+      const remainingFoods = data.foods.slice(1);
+
+      if (editingMeal) {
+        await plansApi.updateMeal(id, editingMeal.id, {
+          type: data.type as MealType,
+          name: firstFood.name,
+          description: data.description || undefined,
+          calories: data.calories ? parseInt(data.calories) : undefined,
+          porcion: firstFood.quantity || undefined,
+          time: data.time || undefined,
+          foods: remainingFoods.map((food) => ({
+            name: food.name,
+            quantity: food.quantity,
+          })),
+        });
+        toast.success('Comida actualizada exitosamente');
+      } else {
+        await plansApi.addMeal(id, {
+          dailyMealId: dailyMeal.id,
+          type: data.type as MealType,
+          name: firstFood.name,
+          description: data.description || undefined,
+          calories: data.calories ? parseInt(data.calories) : undefined,
+          porcion: firstFood.quantity || undefined,
+          time: data.time || undefined,
+          foods: remainingFoods.map((food) => ({
+            name: food.name,
+            quantity: food.quantity,
+          })),
+        });
+        toast.success('Comida agregada exitosamente');
+      }
+
+      const updatedPlan = await plansApi.getById(id);
+      setPlan(updatedPlan);
+      setIsMealModalOpen(false);
+      setEditingMeal(null);
+      reset();
+    } catch (error) {
+      toast.error(editingMeal ? 'Error al actualizar la comida' : 'Error al agregar la comida');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditMeal = (meal: Meal) => {
+    setEditingMeal(meal);
+    setIsMealModalOpen(true);
+  };
+
+  const handleDeleteMeal = async (mealId: string) => {
+    if (!id) return;
+    
+    setDeletingMealId(mealId);
+    try {
+      await plansApi.deleteMeal(id, mealId);
+      const updatedPlan = await plansApi.getById(id);
+      setPlan(updatedPlan);
+      toast.success('Comida eliminada exitosamente');
+    } catch (error) {
+      toast.error('Error al eliminar la comida');
+    } finally {
+      setDeletingMealId(null);
+    }
+  };
+
+  const handleToggleActive = async () => {
+    if (!plan || !id) return;
+
+    setIsSubmitting(true);
+    try {
+      const updated = await plansApi.update(id, { isActive: !plan.isActive });
+      setPlan(updated);
+      toast.success(updated.isActive ? 'Plan activado' : 'Plan desactivado');
+    } catch (error) {
+      toast.error('Error al actualizar el plan');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const mealTypeOrder: MealType[] = [
     'BREAKFAST',
@@ -118,11 +272,9 @@ export const PlanDetailPage = () => {
     'EVENING_SNACK',
   ];
 
-  const sortedMeals = currentDayMeals?.meals.sort(
-    (a, b) => mealTypeOrder.indexOf(a.type) - mealTypeOrder.indexOf(b.type)
-  );
-
-  const totalCalories = sortedMeals?.reduce((acc, meal) => acc + (meal.calories || 0), 0) || 0;
+  // Calcular totales de todas las comidas
+  const allMeals = plan?.dailyMeals.flatMap((dm) => dm.meals) || [];
+  const totalCalories = allMeals.reduce((acc, meal) => acc + (meal.calories || 0), 0);
 
   if (loading) {
     return (
@@ -166,14 +318,27 @@ export const PlanDetailPage = () => {
               <User className="w-4 h-4" />
               {plan.patient.name}
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-              {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-            </span>
-            <Badge variant={plan.isActive ? 'success' : 'default'}>
-              {plan.isActive ? 'Activo' : 'Inactivo'}
-            </Badge>
+            {plan.startDate && plan.endDate && (
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <Badge variant={plan.isActive ? 'success' : 'default'}>
+                {plan.isActive ? 'Activo' : 'Inactivo'}
+              </Badge>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleToggleActive}
+                isLoading={isSubmitting}
+                className={plan.isActive ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}
+              >
+                {plan.isActive ? 'Desactivar' : 'Activar'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -191,7 +356,7 @@ export const PlanDetailPage = () => {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Comidas del día
+                Comidas
               </h2>
               <Button size="sm" onClick={() => setIsMealModalOpen(true)}>
                 <Plus className="w-4 h-4" />
@@ -201,45 +366,36 @@ export const PlanDetailPage = () => {
 
             {plan.dailyMeals.length > 0 ? (
               <>
-                <div className="flex gap-2 overflow-x-auto pb-4">
-                  {plan.dailyMeals.map((dm) => (
-                    <button
-                      key={dm.id}
-                      onClick={() => setSelectedDay(dm.dayNumber)}
-                      className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-                        selectedDay === dm.dayNumber
-                          ? 'bg-mint-500 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {dm.dayName}
-                    </button>
-                  ))}
+                {/* Summary */}
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-6">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Utensils className="w-5 h-5" />
+                    <span className="font-medium">{allMeals.length} comidas</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    <span className="font-medium">{totalCalories} kcal totales</span>
+                  </div>
                 </div>
 
-                {/* Day summary */}
-                {currentDayMeals && (
-                  <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-6">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Utensils className="w-5 h-5" />
-                      <span className="font-medium">{sortedMeals?.length || 0} comidas</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Flame className="w-5 h-5 text-orange-500" />
-                      <span className="font-medium">{totalCalories} kcal totales</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Meals list */}
-                <div className="space-y-4">
-                  {sortedMeals?.map((meal) => (
+                {/* Meals list grouped by day */}
+                <div className="space-y-6">
+                  {plan.dailyMeals
+                    .sort((a, b) => a.dayNumber - b.dayNumber)
+                    .map((dailyMeal) => {
+                      const sortedMeals = dailyMeal.meals.sort(
+                        (a, b) => mealTypeOrder.indexOf(a.type) - mealTypeOrder.indexOf(b.type)
+                      );
+                      
+                      return (
+                        <div key={dailyMeal.id} className="space-y-4">
+                          {sortedMeals.map((meal) => (
                     <div
                       key={meal.id}
                       className="p-4 border border-gray-100 rounded-xl hover:border-mint-200 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-3">
-                        <div>
+                        <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span
                               className={`meal-type-badge ${MEAL_TYPE_COLORS[meal.type]}`}
@@ -260,33 +416,37 @@ export const PlanDetailPage = () => {
                             </p>
                           )}
                         </div>
-                        {meal.calories && (
-                          <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-3 py-1 rounded-lg">
-                            <Flame className="w-4 h-4" />
-                            <span className="font-semibold">{meal.calories}</span>
-                            <span className="text-xs">kcal</span>
+                        <div className="flex items-center gap-2">
+                          {meal.calories && (
+                            <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-3 py-1 rounded-lg">
+                              <Flame className="w-4 h-4" />
+                              <span className="font-semibold">{meal.calories}</span>
+                              <span className="text-xs">kcal</span>
+                            </div>
+                          )}
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleEditMeal(meal)}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDeleteMeal(meal.id)}
+                              isLoading={deletingMealId === meal.id}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
                           </div>
-                        )}
+                        </div>
                       </div>
 
-                      {/* Macros */}
-                      {(meal.protein || meal.carbs || meal.fats) && (
-                        <div className="flex gap-4 mb-3 text-sm">
-                          {meal.protein && (
-                            <span className="text-blue-600">
-                              Proteínas: {meal.protein}g
-                            </span>
-                          )}
-                          {meal.carbs && (
-                            <span className="text-amber-600">
-                              Carbos: {meal.carbs}g
-                            </span>
-                          )}
-                          {meal.fats && (
-                            <span className="text-purple-600">
-                              Grasas: {meal.fats}g
-                            </span>
-                          )}
+                      {meal.porcion && (
+                        <div className="mb-2 text-sm text-gray-600">
+                          <span className="font-medium">Porción:</span> {meal.porcion}
                         </div>
                       )}
 
@@ -310,7 +470,10 @@ export const PlanDetailPage = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                          ))}
+                        </div>
+                      );
+                    })}
                 </div>
               </>
             ) : (
@@ -388,33 +551,129 @@ export const PlanDetailPage = () => {
         </div>
       </div>
 
-      {/* Add Meal Modal - Simplified for demo */}
       <Modal
         isOpen={isMealModalOpen}
         onClose={() => {
           setIsMealModalOpen(false);
+          setEditingMeal(null);
           reset();
         }}
-        title="Agregar Comida"
+        title={editingMeal ? 'Editar Comida' : 'Agregar Comida'}
         size="lg"
       >
-        <div className="p-4 bg-amber-50 rounded-xl mb-6">
-          <p className="text-sm text-amber-800">
-            <strong>Nota:</strong> Para una experiencia completa de edición de comidas,
-            esta funcionalidad estaría implementada con un editor más avanzado.
-            Por ahora, puedes usar la API directamente o editar el plan mediante seed.
-          </p>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Select
+            {...register('type')}
+            label="Tipo de comida"
+            error={errors.type?.message}
+            options={[
+              { value: 'BREAKFAST', label: MEAL_TYPE_LABELS.BREAKFAST },
+              { value: 'MORNING_SNACK', label: MEAL_TYPE_LABELS.MORNING_SNACK },
+              { value: 'LUNCH', label: MEAL_TYPE_LABELS.LUNCH },
+              { value: 'AFTERNOON_SNACK', label: MEAL_TYPE_LABELS.AFTERNOON_SNACK },
+              { value: 'DINNER', label: MEAL_TYPE_LABELS.DINNER },
+              { value: 'EVENING_SNACK', label: MEAL_TYPE_LABELS.EVENING_SNACK },
+            ]}
+          />
 
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            className="flex-1"
-            onClick={() => setIsMealModalOpen(false)}
-          >
-            Cerrar
-          </Button>
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              {...register('time')}
+              type="time"
+              label="Hora de comida (Opcional)"
+              error={errors.time?.message}
+            />
+
+            <Input
+              {...register('calories')}
+              type="number"
+              label="Calorias (Opcional)"
+              placeholder="---"
+              error={errors.calories?.message}
+            />
+          </div>
+
+          <TextArea
+            {...register('description')}
+            label="Observaciones"
+            placeholder="Descripción de la comida"
+            error={errors.description?.message}
+            rows={3}
+          />
+
+          <div className="space-y-3">
+            {fields.map((field, index) => (
+              <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 items-end">
+                <Input
+                  {...register(`foods.${index}.name`)}
+                  label={index === 0 ? 'Alimento (Obligatorio)' : 'Alimento'}
+                  placeholder="---"
+                  error={errors.foods?.[index]?.name?.message}
+                />
+                <Input
+                  {...register(`foods.${index}.quantity`)}
+                  type="number"
+                  min="0"
+                  step="1"
+                  label={index === 0 ? 'Porción' : 'Porción'}
+                  placeholder="Ej: 200"
+                  error={errors.foods?.[index]?.quantity?.message}
+                  onKeyPress={(e) => {
+                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+                <div className="flex items-center h-[42px]">
+                  {index === fields.length - 1 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => append({ name: '', quantity: '' })}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => remove(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {errors.foods?.root && (
+              <p className="text-sm text-red-600">{errors.foods.root.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1 w-full sm:w-auto"
+              onClick={() => {
+                setIsMealModalOpen(false);
+                reset();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1 w-full sm:w-auto"
+              isLoading={isSubmitting}
+            >
+              <Save className="w-4 h-4" />
+              Guardar
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

@@ -23,22 +23,17 @@ import {
   Trash2,
   Edit2,
   User,
-  Lock,
   Users,
   ClipboardList,
+  CreditCard,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Avatar } from '@/components/Avatar';
 
 const createPatientSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
-  password: z
-    .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Debe contener mayúscula, minúscula y número'
-    ),
+  cedula: z.string().min(5, 'La cédula debe tener al menos 5 caracteres'),
   phone: z.string().optional(),
 });
 
@@ -75,6 +70,15 @@ export const PatientsPage = () => {
 
   useEffect(() => {
     fetchPatients();
+    
+    const handleProfileUpdate = () => {
+      fetchPatients();
+    };
+    
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const onSubmit = async (data: CreatePatientForm) => {
@@ -82,7 +86,7 @@ export const PatientsPage = () => {
     try {
       const newPatient = await patientsApi.create(data as CreatePatientData);
       setPatients([...patients, { ...newPatient, plansCount: 0 }]);
-      toast.success('Paciente creado exitosamente');
+      toast.success('Paciente creado exitosamente. Se ha enviado un correo con las credenciales.');
       setIsModalOpen(false);
       reset();
     } catch (error) {
@@ -196,9 +200,7 @@ export const PatientsPage = () => {
                   <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold">
-                          {patient.name.charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar name={patient.name} avatar={patient.avatar} size="md" bgColor="bg-sky-500" />
                         <div>
                           <p className="font-medium text-gray-900">{patient.name}</p>
                           <p className="text-sm text-gray-500">{patient.email}</p>
@@ -291,12 +293,12 @@ export const PatientsPage = () => {
           />
 
           <Input
-            {...register('password')}
-            type="password"
-            label="Contraseña"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            leftIcon={<Lock className="w-5 h-5" />}
+            {...register('cedula')}
+            type="text"
+            label="Cédula"
+            placeholder="1234567890"
+            error={errors.cedula?.message}
+            leftIcon={<CreditCard className="w-5 h-5" />}
           />
 
           <Input

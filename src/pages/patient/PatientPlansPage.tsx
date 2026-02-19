@@ -39,6 +39,7 @@ export const PatientPlansPage = () => {
   const inactivePlans = plans.filter((p) => !p.isActive);
 
   const getPlanProgress = (plan: MealPlan) => {
+    if (!plan.startDate || !plan.endDate) return 0;
     const start = new Date(plan.startDate);
     const end = new Date(plan.endDate);
     const today = new Date();
@@ -93,7 +94,7 @@ export const PatientPlansPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {activePlans.map((plan) => {
                   const progress = getPlanProgress(plan);
-                  const isCurrentlyActive =
+                  const isCurrentlyActive = plan.startDate && plan.endDate &&
                     new Date(plan.startDate) <= new Date() &&
                     new Date(plan.endDate) >= new Date();
 
@@ -123,13 +124,15 @@ export const PatientPlansPage = () => {
                         </p>
                       )}
 
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-                          {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-                        </span>
-                      </div>
+                      {plan.startDate && plan.endDate && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                            {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Progress bar */}
                       {isCurrentlyActive && (
@@ -191,13 +194,15 @@ export const PatientPlansPage = () => {
                       <Badge variant="default">Completado</Badge>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-                        {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-                      </span>
-                    </div>
+                    {plan.startDate && plan.endDate && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                          {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+                        </span>
+                      </div>
+                    )}
 
                     <Link
                       to={`/patient/plans/${plan.id}`}

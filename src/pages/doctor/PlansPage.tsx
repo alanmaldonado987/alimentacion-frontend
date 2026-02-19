@@ -35,8 +35,8 @@ const createPlanSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   description: z.string().optional(),
   patientId: z.string().min(1, 'Selecciona un paciente'),
-  startDate: z.string().min(1, 'Fecha de inicio requerida'),
-  endDate: z.string().min(1, 'Fecha de fin requerida'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 });
 
 type CreatePlanForm = z.infer<typeof createPlanSchema>;
@@ -214,18 +214,15 @@ export const PlansPage = () => {
                 </p>
               )}
 
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-                  {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-                <ClipboardList className="w-4 h-4" />
-                <span>{plan.dailyMeals.length} días configurados</span>
-              </div>
+              {plan.startDate && plan.endDate && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                    {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+                  </span>
+                </div>
+              )}
 
               <div className="flex gap-2 mt-auto pt-4 border-t border-gray-100">
                 <Link
@@ -314,14 +311,14 @@ export const PlansPage = () => {
             <Input
               {...register('startDate')}
               type="date"
-              label="Fecha de inicio"
+              label="Fecha de inicio (Opcional)"
               error={errors.startDate?.message}
             />
 
             <Input
               {...register('endDate')}
               type="date"
-              label="Fecha de fin"
+              label="Fecha de fin (Opcional)"
               error={errors.endDate?.message}
             />
           </div>

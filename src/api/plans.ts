@@ -5,8 +5,8 @@ export interface CreatePlanData {
   title: string;
   description?: string;
   patientId: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   dailyMeals?: {
     dayNumber: number;
     dayName: string;
@@ -15,9 +15,7 @@ export interface CreatePlanData {
       name: string;
       description?: string;
       calories?: number;
-      protein?: number;
-      carbs?: number;
-      fats?: number;
+      porcion?: string;
       time?: string;
       foods?: {
         name: string;
@@ -37,6 +35,37 @@ export interface CreatePlanData {
 
 export interface UpdatePlanData extends Partial<CreatePlanData> {
   isActive?: boolean;
+}
+
+export interface AddMealData {
+  dailyMealId: string;
+  type: string;
+  name: string;
+  description?: string;
+  calories?: number;
+  porcion?: string;
+  time?: string;
+  foods?: {
+    name: string;
+    quantity: string;
+    calories?: number;
+    notes?: string;
+  }[];
+}
+
+export interface UpdateMealData {
+  type?: string;
+  name?: string;
+  description?: string;
+  calories?: number;
+  porcion?: string;
+  time?: string;
+  foods?: {
+    name: string;
+    quantity: string;
+    calories?: number;
+    notes?: string;
+  }[];
 }
 
 export const plansApi = {
@@ -71,6 +100,21 @@ export const plansApi = {
 
   getPatientStats: async (): Promise<PatientStats> => {
     const response = await api.get<ApiResponse<PatientStats>>('/api/plans/stats/patient');
+    return response.data.data;
+  },
+
+  addMeal: async (planId: string, data: AddMealData): Promise<MealPlan> => {
+    const response = await api.post<ApiResponse<MealPlan>>(`/api/plans/${planId}/meals`, data);
+    return response.data.data;
+  },
+
+  updateMeal: async (planId: string, mealId: string, data: UpdateMealData): Promise<MealPlan> => {
+    const response = await api.put<ApiResponse<MealPlan>>(`/api/plans/${planId}/meals/${mealId}`, data);
+    return response.data.data;
+  },
+
+  deleteMeal: async (planId: string, mealId: string): Promise<MealPlan> => {
+    const response = await api.delete<ApiResponse<MealPlan>>(`/api/plans/${planId}/meals/${mealId}`);
     return response.data.data;
   },
 };

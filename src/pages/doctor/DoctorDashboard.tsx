@@ -11,11 +11,11 @@ import {
   CheckCircle,
   Plus,
   ArrowRight,
-  TrendingUp,
   Calendar,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Avatar } from '@/components/Avatar';
 
 export const DoctorDashboard = () => {
   const { user } = useAuth();
@@ -43,6 +43,15 @@ export const DoctorDashboard = () => {
     };
 
     fetchData();
+    
+    const handleProfileUpdate = () => {
+      fetchData();
+    };
+    
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const statCards = [
@@ -161,9 +170,7 @@ export const DoctorDashboard = () => {
                   key={patient.id}
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center text-white font-semibold text-lg">
-                    {patient.name.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar name={patient.name} avatar={patient.avatar} size="lg" bgColor="bg-sky-500" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 truncate">
                       {patient.name}
@@ -229,11 +236,13 @@ export const DoctorDashboard = () => {
                       <p className="text-sm text-gray-500 mt-1">
                         Para: {plan.patient.name}
                       </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                        <Calendar className="w-3 h-3" />
-                        {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
-                        {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
-                      </div>
+                      {plan.startDate && plan.endDate && (
+                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(plan.startDate), 'dd MMM', { locale: es })} -{' '}
+                          {format(new Date(plan.endDate), 'dd MMM yyyy', { locale: es })}
+                        </div>
+                      )}
                     </div>
                     <Badge variant={plan.isActive ? 'success' : 'default'}>
                       {plan.isActive ? 'Activo' : 'Inactivo'}
@@ -252,7 +261,7 @@ export const DoctorDashboard = () => {
       </div>
 
       {/* Quick tip */}
-      <Card className="bg-mint-500 text-white border-0">
+      {/* <Card className="bg-mint-500 text-white border-0">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
             <TrendingUp className="w-7 h-7" />
@@ -264,7 +273,7 @@ export const DoctorDashboard = () => {
             </p>
           </div>
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };

@@ -12,7 +12,13 @@ interface ApiError {
 
 export const useAuth = () => {
   const navigate = useNavigate();
-  const { login: storeLogin, logout: storeLogout, user, isAuthenticated, refreshToken } = useAuthStore();
+  const { login: storeLogin, logout: storeLogout, user, isAuthenticated, refreshToken, setUser } = useAuthStore();
+
+  const updateUser = useCallback((updatedUser: typeof user) => {
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+  }, [setUser]);
 
   const login = useCallback(async (data: LoginData) => {
     try {
@@ -69,6 +75,7 @@ export const useAuth = () => {
     login,
     register,
     logout,
+    updateUser,
     isDoctor: user?.role === 'DOCTOR',
     isPatient: user?.role === 'PATIENT',
   };

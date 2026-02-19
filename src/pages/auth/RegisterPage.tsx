@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
-import { Button, Input, Select } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react';
 
 const registerSchema = z.object({
@@ -17,7 +17,6 @@ const registerSchema = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       'Debe contener mayúscula, minúscula y número'
     ),
-  role: z.enum(['DOCTOR', 'PATIENT'], { required_error: 'Selecciona un rol' }),
   phone: z.string().optional(),
 });
 
@@ -34,17 +33,13 @@ export const RegisterPage = () => {
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: 'PATIENT',
-    },
   });
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
-      await authRegister(data);
+      await authRegister({ ...data, role: 'DOCTOR' });
     } catch {
-      // Error handled in useAuth
     } finally {
       setIsLoading(false);
     }
@@ -100,16 +95,6 @@ export const RegisterPage = () => {
               )}
             </button>
           }
-        />
-
-        <Select
-          {...register('role')}
-          label="Tipo de cuenta"
-          error={errors.role?.message}
-          options={[
-            { value: 'PATIENT', label: 'Paciente' },
-            { value: 'DOCTOR', label: 'Doctor / Nutricionista' },
-          ]}
         />
 
         <Input

@@ -30,6 +30,27 @@ export const authApi = {
     return response.data.data;
   },
 
+  updateProfile: async (data: { name?: string; email?: string; phone?: string; password?: string }): Promise<User> => {
+    const response = await api.put<ApiResponse<User>>('/api/auth/profile', data);
+    return response.data.data;
+  },
+
+  uploadAvatar: async (file: File): Promise<User> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post<ApiResponse<User>>('/api/auth/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  },
+
+  deleteAvatar: async (): Promise<User> => {
+    const response = await api.delete<ApiResponse<User>>('/api/auth/profile/avatar');
+    return response.data.data;
+  },
+
   logout: async (refreshToken: string): Promise<void> => {
     await api.post('/api/auth/logout', { refreshToken });
   },

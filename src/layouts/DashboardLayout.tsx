@@ -10,11 +10,13 @@ import {
   LogOut,
   Menu,
   X,
-  User,
-  ChevronRight,
+  Settings,
+  ChevronDown,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { ConfirmDialog } from '@/components/ui';
+import { ConfirmDialog, Dropdown, DropdownItem } from '@/components/ui';
+import { SystemSettingsModal } from '@/components/SystemSettingsModal';
+import { Avatar } from '@/components/Avatar';
 
 interface NavItem {
   to: string;
@@ -39,6 +41,8 @@ export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showSystemSettingsModal, setShowSystemSettingsModal] = useState(false);
   const location = useLocation();
 
   if (isLoading) {
@@ -121,12 +125,16 @@ export const DashboardLayout = () => {
             ))}
           </nav>
 
-          {/* User section */}
+          <div className="p-4 border-t border-gray-100">
+            <p className="text-sm text-gray-900 text-center italic font-semibold tracking-wide">
+              Versión {import.meta.env.VITE_VERSION_APP}
+            </p>
+          </div>
+
+          {/* User section
           <div className="p-4 border-t border-gray-100">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 mb-3">
-              <div className="w-10 h-10 rounded-full bg-mint-500 flex items-center justify-center text-white font-semibold">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar name={user.name} avatar={user.avatar} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{user.name}</p>
                 <p className="text-xs text-gray-500 truncate">{user.email}</p>
@@ -139,7 +147,7 @@ export const DashboardLayout = () => {
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Cerrar Sesión</span>
             </button>
-          </div>
+          </div> */}
         </div>
       </aside>
 
@@ -155,12 +163,44 @@ export const DashboardLayout = () => {
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
-              <User className="w-4 h-4" />
-              <span>{isDoctor ? 'Doctor' : 'Paciente'}</span>
-              <ChevronRight className="w-4 h-4" />
-              <span className="font-medium text-gray-900">{user.name}</span>
-            </div>
+            <Dropdown
+              isOpen={showUserDropdown}
+              onClose={() => setShowUserDropdown(false)}
+              align="right"
+              trigger={
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <Avatar name={user.name} avatar={user.avatar} size="md" />
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                    <div className="text-xs text-gray-500">{user.email}</div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
+                </button>
+              }
+            >
+              <DropdownItem
+                onClick={() => {
+                  setShowSystemSettingsModal(true);
+                  setShowUserDropdown(false);
+                }}
+                icon={<Settings className="w-4 h-4" />}
+              >
+                Configuración
+              </DropdownItem>
+              <DropdownItem
+                onClick={() => {
+                  setShowLogoutDialog(true);
+                  setShowUserDropdown(false);
+                }}
+                icon={<LogOut className="w-4 h-4" />}
+                variant="danger"
+              >
+                Cerrar Sesión
+              </DropdownItem>
+            </Dropdown>
           </div>
         </header>
 
@@ -191,6 +231,9 @@ export const DashboardLayout = () => {
         isLoading={isLoggingOut}
         icon="logout"
       />
+
+      {/* System Settings Modal */}
+      <SystemSettingsModal isOpen={showSystemSettingsModal} onClose={() => setShowSystemSettingsModal(false)} />
     </div>
   );
 };
